@@ -7,7 +7,10 @@ import (
 )
 
 type Config struct {
-	LogPath           string
+	// Log related
+	LogPath string
+
+	// Database related
 	DBHost            string
 	DBPort            string
 	DBUser            string
@@ -19,10 +22,12 @@ type Config struct {
 	DBMaxOpenConns    int
 	DBMaxIdleConns    int
 	DBConnMaxLifetime time.Duration
-	RedisHost         string
-	RedisPort         int
-	RedisPassword     string
-	RedisDB           int
+
+	// Redis related
+	RedisHost     string
+	RedisPort     int
+	RedisPassword string
+	RedisDB       int
 }
 
 func LoadConfig() *Config {
@@ -38,11 +43,13 @@ func LoadConfig() *Config {
 		DBMaxOpenConns:    getEnvAsInt("DB_MAX_OPEN_CONNS", 25),
 		DBMaxIdleConns:    getEnvAsInt("DB_MAX_IDLE_CONNS", 25),
 		DBConnMaxLifetime: time.Duration(getEnvAsInt("DB_CONN_MAX_LIFETIME", 300)) * time.Second,
-		RedisHost:         getEnv("REDIS_HOST", "localhost"),
-		RedisPort:         getEnvAsInt("REDIS_PORT", 6379),
-		RedisPassword:     getEnv("REDIS_PASSWORD", ""),
-		RedisDB:           getEnvAsInt("REDIS_DB", 0),
-		LogPath:           "./logs/app.log",
+
+		RedisHost:     getEnv("REDIS_HOST", "localhost"),
+		RedisPort:     getEnvAsInt("REDIS_PORT", 6379),
+		RedisPassword: getEnv("REDIS_PASSWORD", ""),
+		RedisDB:       getEnvAsInt("REDIS_DB", 0),
+		
+		LogPath: "./logs/app.log",
 	}
 }
 

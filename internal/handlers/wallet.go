@@ -1,13 +1,14 @@
 package handlers
 
 import (
-	"Crypto.com/internal/repositories/postgres"
 	"errors"
 	"net/http"
 	"strconv"
 
-	"Crypto.com/internal/services"
 	"github.com/gin-gonic/gin"
+
+	"Crypto.com/internal/repositories/postgres"
+	"Crypto.com/internal/services"
 )
 
 type WalletHandler struct {
@@ -52,7 +53,7 @@ func (h *WalletHandler) Withdraw(c *gin.Context) {
 
 	if err := h.service.Withdraw(c.Request.Context(), userID, request.Amount); err != nil {
 		status := http.StatusInternalServerError
-		if err.Error() == "insufficient funds" {
+		if err.Error() == "insufficient balance" {
 			status = http.StatusBadRequest
 		}
 		c.JSON(status, gin.H{"error": err.Error()})
@@ -77,7 +78,7 @@ func (h *WalletHandler) Transfer(c *gin.Context) {
 
 	if err := h.service.Transfer(c.Request.Context(), senderID, request.ReceiverID, request.Amount); err != nil {
 		status := http.StatusInternalServerError
-		if err.Error() == "insufficient funds for transfer" {
+		if err.Error() == "insufficient balance" {
 			status = http.StatusBadRequest
 		}
 		c.JSON(status, gin.H{"error": err.Error()})

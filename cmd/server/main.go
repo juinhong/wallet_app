@@ -1,37 +1,30 @@
 package main
 
 import (
-	"Crypto.com/pkg/utils"
-	"fmt"
-	_ "github.com/jackc/pgx/v5/stdlib"
-	"os"
-
-	"Crypto.com/internal/repositories/redis"
 	"database/sql"
 	"log"
 	"strconv"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	goredis "github.com/redis/go-redis/v9"
+
 	"Crypto.com/internal/config"
 	"Crypto.com/internal/handlers"
 	"Crypto.com/internal/repositories/postgres"
+	"Crypto.com/internal/repositories/redis"
 	"Crypto.com/internal/services"
-	"github.com/gin-gonic/gin"
-	goredis "github.com/redis/go-redis/v9"
+	"Crypto.com/pkg/utils"
 )
 
 func main() {
-	// todo: remove it
-	dir, _ := os.Getwd()
-	fmt.Println("Current working directory: %v", dir)
-	//
-
 	cfg := config.LoadConfig()
 	utils.Init(cfg.Environment == "production", cfg.LogPath)
 
 	// Initialize PostgreSQL
 	connStr := "postgres://" + cfg.DBUser + ":" + cfg.DBPassword + "@" + cfg.DBHost + ":" + cfg.DBPort + "/" + cfg.DBName
-	db, err := sql.Open("pgx", connStr) // Changed driver name to "pgx"
+	db, err := sql.Open("pgx", connStr)
 	if err != nil {
 		log.Fatal("Error connecting to PostgreSQL:", err)
 	}
@@ -46,14 +39,14 @@ func main() {
 
 	// Initialize services
 	walletRepo := postgres.NewWalletRepository(db, utils.Log)
-	cacheRepo := redis.NewCacheRepository(redisClient, time.Hour, log.Default()) // todo: update ttl; update log level
+	cacheRepo := redis.NewCacheRepository(redisClient, time.Hour, utils.Log)
 	walletService := services.NewWalletService(walletRepo, cacheRepo, utils.Log)
 	walletHandler := handlers.NewWalletHandler(walletService)
 
 	// Create router
 	router := gin.Default()
 	router.Use(gin.Recovery())
-	router.Use(handlers.LoggingMiddleware(utils.Log))
+	router.Use(handlers.LoggingHandler(utils.Log))
 
 	// Wallet routes
 	v1 := router.Group("/api/v1")
