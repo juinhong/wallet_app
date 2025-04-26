@@ -4,21 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"testing"
 	"time"
 
-	mock_redis "Crypto.com/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
+
+	mockredis "Crypto.com/mocks"
 )
 
 func TestCacheRepository(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockClient := mock_redis.NewMockCmdable(ctrl)
-	logger := log.New(&testLogWriter{t}, "TEST: ", log.LstdFlags)
+	mockClient := mockredis.NewMockCmdable(ctrl)
+	logger := logrus.New()
 	repo := NewCacheRepository(mockClient, 30*time.Minute, logger)
 
 	t.Run("GetBalance cache miss", func(t *testing.T) {
@@ -57,6 +58,16 @@ func TestCacheRepository(t *testing.T) {
 		}
 	})
 
+	t.Run("GetBalance invalid userID", func(t *testing.T) {
+		balance, err := repo.GetBalance(context.Background(), "")
+		if !errors.Is(err, ErrInvalidUserID) {
+			t.Errorf("Expected ErrInvalidUserID error, got %v", err)
+		}
+		if balance != 0 {
+			t.Errorf("Expected 0 balance, got %f", balance)
+		}
+	})
+
 	t.Run("SetBalance success", func(t *testing.T) {
 		val, _ := json.Marshal(50.0)
 		mockClient.EXPECT().Set(gomock.Any(), "balance:user2", val, 30*time.Minute).Return(redis.NewStatusResult("OK", nil))
@@ -64,6 +75,27 @@ func TestCacheRepository(t *testing.T) {
 		err := repo.SetBalance(context.Background(), "user2", 50.0)
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
+		}
+	})
+
+	t.Run("SetBalance invalid userID", func(t *testing.T) {
+		err := repo.SetBalance(context.Background(), "", 100.0)
+		if !errors.Is(err, ErrInvalidUserID) {
+			t.Errorf("Expected ErrInvalidUserID error, got %v", err)
+		}
+	})
+
+	t.Run("SetBalance invalid amount", func(t *testing.T) {
+		err := repo.SetBalance(context.Background(), "user1", -100.0)
+		if !errors.Is(err, ErrInvalidAmount) {
+			t.Errorf("Expected ErrInvalidAmount error, got %v", err)
+		}
+	})
+
+	t.Run("InvalidateBalance invalid userID", func(t *testing.T) {
+		err := repo.InvalidateBalance(context.Background(), "")
+		if !errors.Is(err, ErrInvalidUserID) {
+			t.Errorf("Expected ErrInvalidUserID error, got %v", err)
 		}
 	})
 
@@ -75,14 +107,4 @@ func TestCacheRepository(t *testing.T) {
 			t.Errorf("Unexpected error: %v", err)
 		}
 	})
-}
-
-type testLogWriter struct {
-	t *testing.T
-}
-
-func (w *testLogWriter) Write(p []byte) (n int, err error) {
-	w.t.Helper()
-	w.t.Log(string(p))
-	return len(p), nil
 }
