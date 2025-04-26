@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -103,19 +102,26 @@ func (h *WalletHandler) GetBalance(c *gin.Context) {
 func (h *WalletHandler) TransactionHistory(c *gin.Context) {
 	userID := c.Param("userID")
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	var request struct {
+		Page  int `json:"page" binding:"required"`
+		Limit int `json:"limit" binding:"required,gt=0"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	// Ensure valid pagination values
-	if page < 1 {
-		page = 1
+	if request.Page < 1 {
+		request.Page = 1
 	}
-	if limit < 1 || limit > 100 {
-		limit = 50
+	if request.Limit < 1 || request.Limit > 100 {
+		request.Limit = 50
 	}
-	offset := (page - 1) * limit
+	offset := (request.Page - 1) * request.Limit
 
-	transactions, err := h.service.GetTransactionHistory(c.Request.Context(), userID, limit, offset)
+	transactions, err := h.service.GetTransactionHistory(c.Request.Context(), userID, request.Limit, offset)
 	if err != nil {
 		// Handle specific error cases
 		if errors.Is(err, postgres.ErrUserNotFound) {
@@ -128,8 +134,8 @@ func (h *WalletHandler) TransactionHistory(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"transactions": transactions,
-		"page":         page,
-		"limit":        limit,
+		"page":         request.Page,
+		"limit":        request.Limit,
 		"total":        len(transactions),
 	})
 }
