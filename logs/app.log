@@ -1,0 +1,1 @@
+[36mINFO[0m[2025-04-26T11:04:17+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m=32.669208ms [36mmethod[0m=GET [36mpath[0m=/api/v1/wallets/testuser/transactions [36mquery[0m= [36mstatus[0m=200 [36muserAgent[0m=PostmanRuntime/7.43.3
