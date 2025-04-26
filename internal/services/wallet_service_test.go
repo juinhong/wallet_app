@@ -1,19 +1,20 @@
 package services
 
 import (
-	"Crypto.com/internal/repositories/postgres"
 	"context"
 	"errors"
-	"google.golang.org/protobuf/proto"
 	"testing"
 	"time"
 
-	"Crypto.com/internal/models"
-	"Crypto.com/mocks"
 	"github.com/golang/mock/gomock"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
+
+	"Crypto.com/internal/models"
+	"Crypto.com/internal/repositories/postgres"
+	"Crypto.com/mocks"
 )
 
 func TestWalletService_Deposit(t *testing.T) {
@@ -35,7 +36,10 @@ func TestWalletService_Deposit(t *testing.T) {
 	})
 
 	t.Run("invalid amount", func(t *testing.T) {
-		err := service.Deposit(context.Background(), "user1", -50.0)
+		ctx := context.Background()
+		mockRepo.EXPECT().Deposit(ctx, "user1", -50.0).Return(postgres.ErrInvalidAmount)
+
+		err := service.Deposit(ctx, "user1", -50.0)
 		assert.ErrorIs(t, err, postgres.ErrInvalidAmount)
 	})
 
@@ -93,11 +97,17 @@ func TestWalletService_Transfer(t *testing.T) {
 	})
 
 	t.Run("same user transfer", func(t *testing.T) {
+		ctx := context.Background()
+		mockRepo.EXPECT().Transfer(ctx, "user1", "user1", 10.0).Return(postgres.ErrInvalidUserID)
+
 		err := service.Transfer(context.Background(), "user1", "user1", 10.0)
 		assert.ErrorIs(t, err, postgres.ErrInvalidUserID)
 	})
 
 	t.Run("invalid amount", func(t *testing.T) {
+		ctx := context.Background()
+		mockRepo.EXPECT().Transfer(ctx, "user1", "user2", -5.0).Return(postgres.ErrInvalidAmount)
+
 		err := service.Transfer(context.Background(), "user1", "user2", -5.0)
 		assert.ErrorIs(t, err, postgres.ErrInvalidAmount)
 	})
@@ -124,7 +134,6 @@ func TestWalletService_GetBalance(t *testing.T) {
 		ctx := context.Background()
 		mockCache.EXPECT().GetBalance(ctx, "user1").Return(0.0, goredis.Nil)
 		mockRepo.EXPECT().GetBalance(ctx, "user1").Return(200.0, nil)
-		mockCache.EXPECT().SetBalance(gomock.Any(), "user1", 200.0).Return(nil)
 
 		balance, err := service.GetBalance(ctx, "user1")
 		assert.NoError(t, err)

@@ -1,12 +1,13 @@
 package services
 
 import (
-	"Crypto.com/internal/models"
-	"Crypto.com/internal/repositories/redis"
 	"context"
+
 	"github.com/sirupsen/logrus"
 
+	"Crypto.com/internal/models"
 	"Crypto.com/internal/repositories/postgres"
+	"Crypto.com/internal/repositories/redis"
 )
 
 type WalletService struct {
@@ -29,23 +30,14 @@ func (s *WalletService) Deposit(ctx context.Context, userID string, amount float
 		"amount": amount,
 	}).Debug("Processing deposit")
 
-	if amount <= 0 {
-		return postgres.ErrInvalidAmount
-	}
-
 	err := s.repo.Deposit(ctx, userID, amount)
 	if err == nil {
-		go func() {
-			_ = s.cache.InvalidateBalance(context.Background(), userID)
-		}()
+		_ = s.cache.InvalidateBalance(ctx, userID)
 	}
 	return err
 }
 
 func (s *WalletService) Withdraw(ctx context.Context, userID string, amount float64) error {
-	if amount <= 0 {
-		return postgres.ErrInvalidAmount
-	}
 	err := s.repo.Withdraw(ctx, userID, amount)
 	if err == nil {
 		_ = s.cache.InvalidateBalance(ctx, userID)
@@ -54,12 +46,6 @@ func (s *WalletService) Withdraw(ctx context.Context, userID string, amount floa
 }
 
 func (s *WalletService) Transfer(ctx context.Context, fromUserID, toUserID string, amount float64) error {
-	if amount <= 0 {
-		return postgres.ErrInvalidAmount
-	}
-	if (fromUserID == "" || toUserID == "") || (fromUserID == toUserID) {
-		return postgres.ErrInvalidUserID
-	}
 	err := s.repo.Transfer(ctx, fromUserID, toUserID, amount)
 	if err == nil {
 		// Invalidate both accounts
@@ -83,7 +69,7 @@ func (s *WalletService) GetBalance(ctx context.Context, userID string) (float64,
 
 	// Update cache
 	go func() {
-		_ = s.cache.SetBalance(context.Background(), userID, balance)
+		_ = s.cache.SetBalance(ctx, userID, balance)
 	}()
 
 	return balance, nil

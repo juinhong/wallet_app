@@ -176,6 +176,11 @@ func (r *PostgresWalletRepository) Transfer(ctx context.Context, fromUserID, toU
 		return ErrInvalidUserID
 	}
 
+	if fromUserID == toUserID {
+		r.logger.Warn("Transfer - fromUserID and toUserID cannot be the same")
+		return ErrInvalidUserID
+	}
+
 	if amount <= 0 {
 		r.logger.Warn("Transfer - amount cannot be less than zero")
 		return ErrInvalidAmount

@@ -90,6 +90,11 @@ func TestWalletRepository(t *testing.T) {
 			require.ErrorIs(t, err, ErrInvalidUserID)
 		})
 
+		t.Run("sender and receiver cannot be the same", func(t *testing.T) {
+			err := repo.Transfer(ctx, "user1", "user1", 100.0)
+			require.ErrorIs(t, err, ErrInvalidUserID)
+		})
+
 		t.Run("sender not found", func(t *testing.T) {
 			mock.ExpectBegin()
 			mock.ExpectQuery(`SELECT balance`).WithArgs("user1").WillReturnError(sql.ErrNoRows)
