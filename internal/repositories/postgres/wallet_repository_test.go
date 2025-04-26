@@ -34,6 +34,11 @@ func TestWalletRepository(t *testing.T) {
 			err := repo.Deposit(ctx, "user1", -50.0)
 			require.ErrorIs(t, err, ErrInvalidAmount)
 		})
+
+		t.Run("invalid userID", func(t *testing.T) {
+			err := repo.Deposit(ctx, "", 100.0)
+			require.ErrorIs(t, err, ErrInvalidUserID)
+		})
 	})
 
 	t.Run("Withdraw", func(t *testing.T) {
@@ -52,6 +57,16 @@ func TestWalletRepository(t *testing.T) {
 			err := repo.Withdraw(ctx, "invalid", 100.0)
 			require.ErrorIs(t, err, ErrUserNotFound)
 		})
+
+		t.Run("invalid amount", func(t *testing.T) {
+			err := repo.Withdraw(ctx, "user1", -50.0)
+			require.ErrorIs(t, err, ErrInvalidAmount)
+		})
+
+		t.Run("invalid userID", func(t *testing.T) {
+			err := repo.Withdraw(ctx, "", 100.0)
+			require.ErrorIs(t, err, ErrInvalidUserID)
+		})
 	})
 
 	t.Run("Transfer", func(t *testing.T) {
@@ -63,6 +78,42 @@ func TestWalletRepository(t *testing.T) {
 			mock.ExpectExec(`INSERT INTO transactions`).WithArgs("user1", "user2", 100.0, "transfer", sqlmock.AnyArg()).WillReturnResult(sqlmock.NewResult(1, 1))
 			mock.ExpectCommit()
 			require.NoError(t, repo.Transfer(ctx, "user1", "user2", 100.0))
+		})
+
+		t.Run("invalid sender", func(t *testing.T) {
+			err := repo.Transfer(ctx, "", "user2", 100.0)
+			require.ErrorIs(t, err, ErrInvalidUserID)
+		})
+
+		t.Run("invalid receiver", func(t *testing.T) {
+			err := repo.Transfer(ctx, "user1", "", 100.0)
+			require.ErrorIs(t, err, ErrInvalidUserID)
+		})
+
+		t.Run("sender not found", func(t *testing.T) {
+			mock.ExpectBegin()
+			mock.ExpectQuery(`SELECT balance`).WithArgs("user1").WillReturnError(sql.ErrNoRows)
+			mock.ExpectRollback()
+			err := repo.Transfer(ctx, "user1", "user2", 100.0)
+			require.ErrorIs(t, err, ErrUserNotFound)
+		})
+
+		t.Run("receiver not found", func(t *testing.T) {
+			mock.ExpectBegin()
+			mock.ExpectQuery(`SELECT balance`).WithArgs("user1").WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(200.0))
+			mock.ExpectExec(`UPDATE wallets`).WithArgs(100.0, "user1").WillReturnResult(sqlmock.NewResult(0, 1))
+			mock.ExpectExec(`UPDATE wallets`).WithArgs(100.0, "user2").WillReturnError(sql.ErrNoRows)
+			mock.ExpectRollback()
+			err := repo.Transfer(ctx, "user1", "user2", 100.0)
+			require.ErrorIs(t, err, ErrUserNotFound)
+		})
+
+		t.Run("sender has insufficient balance", func(t *testing.T) {
+			mock.ExpectBegin()
+			mock.ExpectQuery(`SELECT balance`).WithArgs("user1").WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(50.0))
+			mock.ExpectRollback()
+			err := repo.Transfer(ctx, "user1", "user2", 100.0)
+			require.ErrorIs(t, err, ErrInsufficientBalance)
 		})
 	})
 
@@ -78,6 +129,11 @@ func TestWalletRepository(t *testing.T) {
 			mock.ExpectQuery(`SELECT balance`).WithArgs("invalid").WillReturnError(sql.ErrNoRows)
 			_, err := repo.GetBalance(ctx, "invalid")
 			require.ErrorIs(t, err, ErrUserNotFound)
+		})
+
+		t.Run("invalid userID", func(t *testing.T) {
+			_, err := repo.GetBalance(ctx, "")
+			require.ErrorIs(t, err, ErrInvalidUserID)
 		})
 	})
 
@@ -98,6 +154,16 @@ func TestWalletRepository(t *testing.T) {
 			mock.ExpectQuery(`SELECT`).WithArgs("user1", 10, 0).WillReturnError(errors.New("query error"))
 			_, err := repo.GetTransactionHistory(ctx, "user1", 10, 0)
 			require.ErrorContains(t, err, "query error")
+		})
+
+		t.Run("invalid userID", func(t *testing.T) {
+			_, err := repo.GetTransactionHistory(ctx, "", 10, 0)
+			require.ErrorIs(t, err, ErrInvalidUserID)
+		})
+
+		t.Run("invalid limit", func(t *testing.T) {
+			_, err := repo.GetTransactionHistory(ctx, "user1", 0, 0)
+			require.ErrorIs(t, err, ErrInvalidLimit)
 		})
 	})
 }

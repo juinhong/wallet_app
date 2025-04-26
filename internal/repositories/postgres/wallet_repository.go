@@ -20,11 +20,11 @@ type WalletRepository interface {
 }
 
 var (
-	ErrInsufficientBalance  = errors.New("insufficient balance")
-	ErrUserNotFound         = errors.New("user not found")
-	ErrInvalidAmount        = errors.New("invalid amount")
-	ErrInvalidUserID        = errors.New("invalid user ID")
-	ErrInvalidOffsetOrLimit = errors.New("invalid offset or limit")
+	ErrInsufficientBalance = errors.New("insufficient balance")
+	ErrUserNotFound        = errors.New("user not found")
+	ErrInvalidAmount       = errors.New("invalid amount")
+	ErrInvalidUserID       = errors.New("invalid user ID")
+	ErrInvalidLimit        = errors.New("invalid limit")
 )
 
 type PostgresWalletRepository struct {
@@ -229,6 +229,11 @@ func (r *PostgresWalletRepository) Transfer(ctx context.Context, fromUserID, toU
 		"UPDATE wallets SET balance = balance + $1 WHERE user_id = $2",
 		amount, toUserID,
 	)
+	if errors.Is(err, sql.ErrNoRows) {
+		r.logger.WithError(err).Error("Transfer - Cannot find receiver in the database")
+		return ErrUserNotFound
+	}
+
 	if err != nil {
 		logger.WithError(err).Error("Transfer - Update receiver balance failed")
 		return err
@@ -294,9 +299,9 @@ func (r *PostgresWalletRepository) GetTransactionHistory(ctx context.Context, us
 		return nil, ErrInvalidUserID
 	}
 
-	if limit < 0 || offset < 0 {
-		r.logger.Warn("GetTransactionHistory - limit and offset cannot be less than 0")
-		return nil, ErrInvalidOffsetOrLimit
+	if limit <= 0 {
+		r.logger.Warn("GetTransactionHistory - limit cannot be less than 0")
+		return nil, ErrInvalidLimit
 	}
 
 	logger := r.logger.WithFields(logrus.Fields{
