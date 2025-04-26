@@ -67,10 +67,10 @@ func TestWalletService_Withdraw(t *testing.T) {
 
 	t.Run("insufficient funds", func(t *testing.T) {
 		ctx := context.Background()
-		mockRepo.EXPECT().Withdraw(ctx, "user1", 100.0).Return(postgres.ErrInsufficientFunds)
+		mockRepo.EXPECT().Withdraw(ctx, "user1", 100.0).Return(postgres.ErrInsufficientBalance)
 
 		err := service.Withdraw(ctx, "user1", 100.0)
-		assert.ErrorIs(t, err, postgres.ErrInsufficientFunds)
+		assert.ErrorIs(t, err, postgres.ErrInsufficientBalance)
 	})
 }
 

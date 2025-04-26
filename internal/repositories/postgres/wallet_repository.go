@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/sirupsen/logrus"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"Crypto.com/internal/models"
 )
@@ -19,14 +20,13 @@ type WalletRepository interface {
 }
 
 var (
-	ErrInsufficientBalance = errors.New("insufficient balance")
-	ErrUserNotFound        = errors.New("user not found")
-	ErrInvalidAmount       = errors.New("invalid amount")
-	ErrInvalidUserID       = errors.New("invalid user ID")
-	ErrInsufficientFunds   = errors.New("insufficient funds")
+	ErrInsufficientBalance  = errors.New("insufficient balance")
+	ErrUserNotFound         = errors.New("user not found")
+	ErrInvalidAmount        = errors.New("invalid amount")
+	ErrInvalidUserID        = errors.New("invalid user ID")
+	ErrInvalidOffsetOrLimit = errors.New("invalid offset or limit")
 )
 
-// Implement the interface
 type PostgresWalletRepository struct {
 	db     *sql.DB
 	logger *logrus.Logger
@@ -39,10 +39,12 @@ func NewWalletRepository(db *sql.DB, logger *logrus.Logger) *PostgresWalletRepos
 // Deposit adds amount to user's balance and creates transaction record
 func (r *PostgresWalletRepository) Deposit(ctx context.Context, userID string, amount float64) error {
 	if userID == "" {
+		r.logger.Warn("Deposit - userID cannot be an empty string")
 		return ErrInvalidUserID
 	}
 
 	if amount <= 0 {
+		r.logger.Warn("Deposit - amount cannot be less than zero")
 		return ErrInvalidAmount
 	}
 
@@ -53,7 +55,7 @@ func (r *PostgresWalletRepository) Deposit(ctx context.Context, userID string, a
 
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		logger.WithError(err).Error("Deposit transaction failed")
+		logger.WithError(err).Error("Deposit - Begin DB transaction failed")
 		return err
 	}
 	defer tx.Rollback()
@@ -67,6 +69,7 @@ func (r *PostgresWalletRepository) Deposit(ctx context.Context, userID string, a
 		userID, amount,
 	)
 	if err != nil {
+		logger.WithError(err).Error("Deposit - Update balance failed")
 		return err
 	}
 
@@ -78,11 +81,13 @@ func (r *PostgresWalletRepository) Deposit(ctx context.Context, userID string, a
 		userID, amount, "deposit", time.Now(),
 	)
 	if err != nil {
+		logger.WithError(err).Error("Deposit - Create transaction record failed")
 		return err
 	}
 
 	err = tx.Commit()
 	if err != nil {
+		logger.WithError(err).Error("Deposit - Commit DB transaction failed")
 		return err
 	}
 
@@ -92,8 +97,24 @@ func (r *PostgresWalletRepository) Deposit(ctx context.Context, userID string, a
 
 // Withdraw deducts amount from user's balance if sufficient funds
 func (r *PostgresWalletRepository) Withdraw(ctx context.Context, userID string, amount float64) error {
+	if userID == "" {
+		r.logger.Warn("Withdraw - userID cannot be an empty string")
+		return ErrInvalidUserID
+	}
+
+	if amount <= 0 {
+		r.logger.Warn("Withdraw - amount cannot be less than zero")
+		return ErrInvalidAmount
+	}
+
+	logger := r.logger.WithFields(logrus.Fields{
+		"userID": userID,
+		"amount": amount,
+	})
+
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
+		logger.WithError(err).Error("Withdraw - Begin DB transaction failed")
 		return err
 	}
 	defer tx.Rollback()
@@ -105,13 +126,16 @@ func (r *PostgresWalletRepository) Withdraw(ctx context.Context, userID string, 
 	).Scan(&currentBalance)
 
 	if errors.Is(err, sql.ErrNoRows) {
+		logger.WithError(err).Error("Withdraw - Cannot find user in the database")
 		return ErrUserNotFound
 	}
 	if err != nil {
+		logger.WithError(err).Error("Withdraw - Query user balance failed")
 		return err
 	}
 
 	if currentBalance < amount {
+		logger.WithError(err).Error("Withdraw - User balance is too low")
 		return ErrInsufficientBalance
 	}
 
@@ -120,6 +144,7 @@ func (r *PostgresWalletRepository) Withdraw(ctx context.Context, userID string, 
 		amount, userID,
 	)
 	if err != nil {
+		logger.WithError(err).Error("Withdraw - Update user balance failed")
 		return err
 	}
 
@@ -130,16 +155,41 @@ func (r *PostgresWalletRepository) Withdraw(ctx context.Context, userID string, 
 		userID, amount, "withdrawal", time.Now(),
 	)
 	if err != nil {
+		logger.WithError(err).Error("Withdraw - Create transaction record failed")
 		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		logger.WithError(err).Error("Withdraw - Commit DB transaction failed")
+		return err
+	}
+
+	logger.Info("Withdraw successful")
+	return nil
 }
 
 // Transfer moves funds between two users atomically
 func (r *PostgresWalletRepository) Transfer(ctx context.Context, fromUserID, toUserID string, amount float64) error {
+	if fromUserID == "" || toUserID == "" {
+		r.logger.Warn("Transfer - fromUserID and toUserID cannot be an empty string")
+		return ErrInvalidUserID
+	}
+
+	if amount <= 0 {
+		r.logger.Warn("Transfer - amount cannot be less than zero")
+		return ErrInvalidAmount
+	}
+
+	logger := r.logger.WithFields(logrus.Fields{
+		"fromUserID": fromUserID,
+		"toUserID":   toUserID,
+		"amount":     amount,
+	})
+
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
+		r.logger.WithError(err).Error("Transfer - Begin DB transaction failed")
 		return err
 	}
 	defer tx.Rollback()
@@ -152,13 +202,16 @@ func (r *PostgresWalletRepository) Transfer(ctx context.Context, fromUserID, toU
 	).Scan(&currentBalance)
 
 	if errors.Is(err, sql.ErrNoRows) {
+		r.logger.WithError(err).Error("Transfer - Cannot find sender in the database")
 		return ErrUserNotFound
 	}
 	if err != nil {
+		logger.WithError(err).Error("Transfer - Query sender balance failed")
 		return err
 	}
 
 	if currentBalance < amount {
+		logger.WithError(err).Error("Transfer - Sender balance is too low")
 		return ErrInsufficientBalance
 	}
 
@@ -167,6 +220,7 @@ func (r *PostgresWalletRepository) Transfer(ctx context.Context, fromUserID, toU
 		amount, fromUserID,
 	)
 	if err != nil {
+		logger.WithError(err).Error("Transfer - Update sender balance failed")
 		return err
 	}
 
@@ -176,6 +230,7 @@ func (r *PostgresWalletRepository) Transfer(ctx context.Context, fromUserID, toU
 		amount, toUserID,
 	)
 	if err != nil {
+		logger.WithError(err).Error("Transfer - Update receiver balance failed")
 		return err
 	}
 
@@ -188,14 +243,31 @@ func (r *PostgresWalletRepository) Transfer(ctx context.Context, fromUserID, toU
 		fromUserID, toUserID, amount, "transfer", now,
 	)
 	if err != nil {
+		logger.WithError(err).Error("Transfer - Create transaction record failed")
 		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		logger.WithError(err).Error("Transfer - Commit DB transaction failed")
+		return err
+	}
+
+	logger.Info("Transfer successful")
+	return nil
 }
 
 // GetBalance returns current wallet balance
 func (r *PostgresWalletRepository) GetBalance(ctx context.Context, userID string) (float64, error) {
+	if userID == "" {
+		r.logger.Warn("GetBalance - userID cannot be an empty string")
+		return 0, ErrInvalidUserID
+	}
+
+	logger := r.logger.WithFields(logrus.Fields{
+		"userID": userID,
+	})
+
 	var balance float64
 	err := r.db.QueryRowContext(ctx,
 		"SELECT balance FROM wallets WHERE user_id = $1",
@@ -203,13 +275,34 @@ func (r *PostgresWalletRepository) GetBalance(ctx context.Context, userID string
 	).Scan(&balance)
 
 	if errors.Is(err, sql.ErrNoRows) {
+		logger.WithError(err).Error("GetBalance - Cannot user in database")
 		return 0, ErrUserNotFound
 	}
-	return balance, err
+
+	if err != nil {
+		logger.WithError(err).Error("GetBalance - Query user balance failed")
+		return 0, err
+	}
+
+	return balance, nil
 }
 
 // GetTransactionHistory returns paginated transaction history
 func (r *PostgresWalletRepository) GetTransactionHistory(ctx context.Context, userID string, limit, offset int) ([]models.Transaction, error) {
+	if userID == "" {
+		r.logger.Warn("GetTransactionHistory - userID cannot be an empty string")
+		return nil, ErrInvalidUserID
+	}
+
+	if limit < 0 || offset < 0 {
+		r.logger.Warn("GetTransactionHistory - limit and offset cannot be less than 0")
+		return nil, ErrInvalidOffsetOrLimit
+	}
+
+	logger := r.logger.WithFields(logrus.Fields{
+		"userID": userID,
+	})
+
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT id, from_user_id, to_user_id, amount, type, created_at 
 		FROM transactions 
@@ -219,6 +312,7 @@ func (r *PostgresWalletRepository) GetTransactionHistory(ctx context.Context, us
 		userID, limit, offset,
 	)
 	if err != nil {
+		logger.WithError(err).Error("GetTransactionHistory - Query transactions failed")
 		return nil, err
 	}
 	defer rows.Close()
@@ -235,6 +329,7 @@ func (r *PostgresWalletRepository) GetTransactionHistory(ctx context.Context, us
 			&txn.CreatedAt,
 		)
 		if err != nil {
+			logger.WithError(err).Error("GetTransactionHistory - Scan transactions failed")
 			return nil, err
 		}
 		transactions = append(transactions, txn)
