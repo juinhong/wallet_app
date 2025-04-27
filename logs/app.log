@@ -12,3 +12,35 @@
 [36mINFO[0m[2025-04-27T00:17:14+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m="913.042µs" [36mmethod[0m=GET [36mpath[0m=/api/v1/wallets/testuser/transactions [36mquery[0m= [36mstatus[0m=200 [36muserAgent[0m=PostmanRuntime/7.43.3
 [36mINFO[0m[2025-04-27T00:17:24+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m="682µs" [36mmethod[0m=GET [36mpath[0m=/api/v1/wallets/testuser/transactions [36mquery[0m= [36mstatus[0m=200 [36muserAgent[0m=PostmanRuntime/7.43.3
 [36mINFO[0m[2025-04-27T00:17:47+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m="946.084µs" [36mmethod[0m=GET [36mpath[0m=/api/v1/wallets/testuser/transactions [36mquery[0m= [36mstatus[0m=200 [36muserAgent[0m=PostmanRuntime/7.43.3
+[36mINFO[0m[2025-04-27T00:18:34+08:00] Transfer successful                           [36mamount[0m=30 [36mfromUserID[0m=testuser [36mtoUserID[0m=user456
+[36mINFO[0m[2025-04-27T00:18:34+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m=11.823958ms [36mmethod[0m=POST [36mpath[0m=/api/v1/wallets/testuser/transfer [36mquery[0m= [36mstatus[0m=200 [36muserAgent[0m=PostmanRuntime/7.43.3
+[33mWARN[0m[2025-04-27T00:18:46+08:00] 47 <nil>                                      [33muserID[0m=testuser
+[36mINFO[0m[2025-04-27T00:18:46+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m=2.102084ms [36mmethod[0m=GET [36mpath[0m=/api/v1/wallets/testuser/balance [36mquery[0m= [36mstatus[0m=200 [36muserAgent[0m=PostmanRuntime/7.43.3
+[31mERRO[0m[2025-04-27T00:18:46+08:00] 52 <nil>                                      [31mamount[0m=20 [31merror[0m="context canceled" [31muserID[0m=testuser
+[33mWARN[0m[2025-04-27T00:18:53+08:00] 46 <nil>                                      [33muserID[0m=user456
+[36mINFO[0m[2025-04-27T00:18:53+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m=1.119ms [36mmethod[0m=GET [36mpath[0m=/api/v1/wallets/user456/balance [36mquery[0m= [36mstatus[0m=200 [36muserAgent[0m=PostmanRuntime/7.43.3
+[36mINFO[0m[2025-04-27T00:19:02+08:00] Withdraw successful                           [36mamount[0m=10 [36muserID[0m=testuser
+[36mINFO[0m[2025-04-27T00:19:02+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m=4.39ms [36mmethod[0m=POST [36mpath[0m=/api/v1/wallets/testuser/withdraw [36mquery[0m= [36mstatus[0m=200 [36muserAgent[0m=PostmanRuntime/7.43.3
+[36mINFO[0m[2025-04-27T00:19:03+08:00] Withdraw successful                           [36mamount[0m=10 [36muserID[0m=testuser
+[36mINFO[0m[2025-04-27T00:19:03+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m=2.575833ms [36mmethod[0m=POST [36mpath[0m=/api/v1/wallets/testuser/withdraw [36mquery[0m= [36mstatus[0m=200 [36muserAgent[0m=PostmanRuntime/7.43.3
+[31mERRO[0m[2025-04-27T00:19:04+08:00] Withdraw - User balance is too low            [31mamount[0m=10 [31merror[0m="<nil>" [31muserID[0m=testuser
+[36mINFO[0m[2025-04-27T00:19:04+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m=1.273292ms [36mmethod[0m=POST [36mpath[0m=/api/v1/wallets/testuser/withdraw [36mquery[0m= [36mstatus[0m=400 [36muserAgent[0m=PostmanRuntime/7.43.3
+[37mDEBU[0m[2025-04-27T00:19:10+08:00] Processing deposit                            [37mamount[0m=100 [37muserID[0m=testuser
+[36mINFO[0m[2025-04-27T00:19:10+08:00] Deposit successful                            [36mamount[0m=100 [36muserID[0m=testuser
+[36mINFO[0m[2025-04-27T00:19:10+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m=3.759125ms [36mmethod[0m=POST [36mpath[0m=/api/v1/wallets/testuser/deposit [36mquery[0m= [36mstatus[0m=200 [36muserAgent[0m=PostmanRuntime/7.43.3
+[33mWARN[0m[2025-04-27T00:19:22+08:00] 47 <nil>                                      [33muserID[0m=testuser
+[36mINFO[0m[2025-04-27T00:19:22+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m=1.756334ms [36mmethod[0m=GET [36mpath[0m=/api/v1/wallets/testuser/balance [36mquery[0m= [36mstatus[0m=200 [36muserAgent[0m=PostmanRuntime/7.43.3
+[31mERRO[0m[2025-04-27T00:19:22+08:00] 52 <nil>                                      [31mamount[0m=100 [31merror[0m="context canceled" [31muserID[0m=testuser
+[31mERRO[0m[2025-04-27T00:19:30+08:00] Withdraw - User balance is too low            [31mamount[0m=101 [31merror[0m="<nil>" [31muserID[0m=testuser
+[36mINFO[0m[2025-04-27T00:19:30+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m=1.653125ms [36mmethod[0m=POST [36mpath[0m=/api/v1/wallets/testuser/withdraw [36mquery[0m= [36mstatus[0m=400 [36muserAgent[0m=PostmanRuntime/7.43.3
+[33mWARN[0m[2025-04-27T00:19:35+08:00] 47 <nil>                                      [33muserID[0m=testuser
+[36mINFO[0m[2025-04-27T00:19:35+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m="816.625µs" [36mmethod[0m=GET [36mpath[0m=/api/v1/wallets/testuser/balance [36mquery[0m= [36mstatus[0m=200 [36muserAgent[0m=PostmanRuntime/7.43.3
+[36mINFO[0m[2025-04-27T00:19:38+08:00] Withdraw successful                           [36mamount[0m=100 [36muserID[0m=testuser
+[36mINFO[0m[2025-04-27T00:19:38+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m=4.179667ms [36mmethod[0m=POST [36mpath[0m=/api/v1/wallets/testuser/withdraw [36mquery[0m= [36mstatus[0m=200 [36muserAgent[0m=PostmanRuntime/7.43.3
+[33mWARN[0m[2025-04-27T00:19:40+08:00] 47 <nil>                                      [33muserID[0m=testuser
+[36mINFO[0m[2025-04-27T00:19:40+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m="888.583µs" [36mmethod[0m=GET [36mpath[0m=/api/v1/wallets/testuser/balance [36mquery[0m= [36mstatus[0m=200 [36muserAgent[0m=PostmanRuntime/7.43.3
+[33mWARN[0m[2025-04-27T00:19:40+08:00] SetBalance - balance must be greater than zero 
+[31mERRO[0m[2025-04-27T00:19:49+08:00] Transfer - Sender balance is too low          [31mamount[0m=30 [31merror[0m="<nil>" [31mfromUserID[0m=testuser [31mtoUserID[0m=user456
+[36mINFO[0m[2025-04-27T00:19:49+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m=1.588542ms [36mmethod[0m=POST [36mpath[0m=/api/v1/wallets/testuser/transfer [36mquery[0m= [36mstatus[0m=400 [36muserAgent[0m=PostmanRuntime/7.43.3
+[33mWARN[0m[2025-04-27T00:19:55+08:00] Transfer - fromUserID and toUserID cannot be the same 
+[36mINFO[0m[2025-04-27T00:19:55+08:00] Request handled                               [36mip[0m="::1" [36mlatency[0m="445.667µs" [36mmethod[0m=POST [36mpath[0m=/api/v1/wallets/testuser/transfer [36mquery[0m= [36mstatus[0m=500 [36muserAgent[0m=PostmanRuntime/7.43.3
