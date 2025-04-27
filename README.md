@@ -311,6 +311,17 @@ Error Handling:
 - Graceful shutdown handling
 - Meaningful log messages
 
+Security:
+- SQL Injection Protection
+  - **Parameterized Queries**: All database interactions use pgx's native parameterization
+    ```go
+    // Example from repository code
+    _, err = tx.ExecContext(ctx,
+        "UPDATE wallets SET balance = balance + $1 WHERE user_id = $2",
+        amount, userID,  // Values are safely parameterized
+    ) 
+    ```
+
 ### Development Timeline ⏳
 Task: Time Spent
 
