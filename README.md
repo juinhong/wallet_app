@@ -1,6 +1,6 @@
 # Crypto Wallet Management API
 
-A production-ready Go service for managing cryptocurrency wallet transactions with Redis caching and PostgreSQL storage.
+A Go service for managing cryptocurrency wallet transactions with Redis caching and PostgreSQL storage.
 
 ## Features ✨
 
